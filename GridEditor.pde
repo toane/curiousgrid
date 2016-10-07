@@ -1,8 +1,10 @@
 /*
 U8glib graphical screen editor for 128x64 screens
-mr-maurice@wanadoo.fr
-use keyboard to choose a tool
-*/
+ https://github.com/olikraus/u8glib
+ 
+ mr-maurice@wanadoo.fr
+ use keyboard to choose a tool
+ */
 final int zoom = 10;
 final int gridX=128;
 final int gridY=64;
@@ -13,11 +15,15 @@ final int bottomMargin=150;
 ArrayList <Pixel> pxs;
 ArrayList <GraphicElement> histo;
 ArrayList <String> outputCode;
-Pixel[][] vpxs;//acces aux pixels par coordonnee absolue (O -> 128,0 -> 64);
+color black=color(0, 0, 0);
+color blue=color(55, 133, 145);
+Pixel[][] vpxs;//acces aux pixels par coordonnee absolue (O -> 127,0 -> 63);
 Pixel fsp; //first selected pixel for 2D surface selections
 DrawMode mode;
 DrawMode lastUserMode;
 Coordinate curMouse;
+PImage thumbnail;
+PImage backgroundImage;
 static PImage itoolbt;
 static PImage cicon;
 boolean beginDraw2pt=false;
@@ -43,11 +49,10 @@ void setup() {
   lastUserMode=mode=DrawMode.PIXEL;
   vpxs=new Pixel[gridX+1][gridY+1]; //+1 ++ hack
   textFont(createFont("Calibri-30.vlw", 20));
-
+  thumbnail=createImage(gridX, gridY, RGB);//miniature de l'ecran en cours de creation
   stroke(130);   // Set line drawing color to white
   frameRate(15);
   itoolbt=loadImage("toolbartip.png");
-
   pxs=new ArrayList<Pixel>();
   histo=new ArrayList<GraphicElement>();
   outputCode= new ArrayList<String>();
@@ -77,9 +82,18 @@ void draw() {
   }
 
   fill(200);
+    if (backgroundImage != null) {
+      tint(255, 126);
+    image(backgroundImage, (gridX*zoom)/2-backgroundImage.width/2, (gridY*zoom)/2-backgroundImage.height/2);
+    
+  }
+  tint(255, 255);
   text(mode+" MODE", 600, 700);
   text(curMouse.getX()+":"+curMouse.getY(), 600, 720);
+  rect(1149, 669, 129, 65);
   image(cicon, 50, 680);
+  image(thumbnail, 1150, 670);
+
 }
 
 void toolbarCycle() {
@@ -95,13 +109,15 @@ void toolbarCycle() {
     mode=DrawMode.PIXEL;
   } else if (key=='c') {
     mode=DrawMode.LINE;
-  } 
+  } else if (key=='u') {
+    loadBackgroundImage();
+  }
   /*
   else if (key=='m') {
-    histo.clear();
-    outputCode.clear();
-    clearAll();
-  } */
+   histo.clear();
+   outputCode.clear();
+   clearAll();
+   } */
   else if (key=='z') {
     undoLast();
   } else if (key=='p') {
@@ -164,19 +180,11 @@ void drawBox(boolean replay) {
   //println(": drawBox ", left, top, right, bottom);
   for (int i=left; i<=right; i++) {
     for (int j=bottom; j<=top; j++) {
-      /*
-      for (Pixel p : pxs) {
-       if (p.isAt(i, j)) {
-       p.setActive();
-       }
-       }
-       */
       vpxs[i][j].setActive();
     }
   }
 
   if (!replay) {
-    //histo.add(new GraphicElement(mode, lx1, ly1, right-left+1, top-bottom+1));
     histo.add(new GraphicElement(mode, left, top, right, bottom));
   }
 }
@@ -190,46 +198,18 @@ void drawFrame(boolean replay) {
   //draw top line
   for (int i=left; i<=right; i++) {
     vpxs[i][top].setActive();
-    /*
-    for (Pixel p : pxs) {
-     if (p.isAt(i, top)) {
-     p.setActive();
-     };
-     }
-     */
   }
   //draw bottom line
   for (int i=left; i<=right; i++) {
     vpxs[i][bottom].setActive();
-    /*
-    for (Pixel p : pxs) {
-     if (p.isAt(i, bottom)) {
-     p.setActive();
-     };
-     }
-     */
   }
   //draw left line
   for (int j=bottom; j<=top; j++) {
     vpxs[left][j].setActive();
-    /*
-    for (Pixel p : pxs) {
-     if (p.isAt(left, j)) {
-     p.setActive();
-     };
-     }
-     */
   }
   //draw right line
   for (int j=bottom; j<=top; j++) {
     vpxs[right][j].setActive();
-    /*    
-     for (Pixel p : pxs) {
-     if (p.isAt(right, j)) {
-     p.setActive();
-     };
-     }
-     */
   }
   if (!replay) {
     // histo.add(new GraphicElement(mode, lx1, ly1, right-left+1, top-bottom+1));
@@ -266,13 +246,6 @@ void drawLine(boolean replay) {
 
   for (Coordinate c : coordinatesArray) {
     vpxs[c.x1][c.y1].setActive();
-    /*
-    for (Pixel p : pxs) {
-     if (p.isAt(c.x1, c.y1)) {
-     p.setActive();
-     };
-     }
-     */
   }
 }
 
@@ -328,17 +301,6 @@ void drawPixel(boolean replay) {
     lx1=curMouse.getX();
     ly1=curMouse.getY();
     histo.add(new GraphicElement(mode, lx1, ly1));
-
-    /*
-    for (Pixel p : pxs) {
-     if (p.isPressed(mouseX, mouseY)) {
-     p.setActive();
-     lx1=p.getX();
-     ly1=p.getY();
-     histo.add(new GraphicElement(mode, lx1, ly1));
-     }
-     }
-     */
   }
   //MODE REPLAY
   if (replay) {
@@ -468,11 +430,6 @@ class Pixel {
 returns true if pixel currently active
    */
   public boolean getActive() {
-    /*boolean r=false;
-     if (c==activeColor||c==endPointColor) {
-     r=true;
-     }
-     return r;*/
     return (active||endPoint);
   }
 
@@ -549,20 +506,21 @@ returns true if pixel currently active
   public void setActive() {
     c=activeColor;
     active=true;
+    updateImagePreview(tx, ty, false);
   }
 
   public void setInactive() {
     c=inactiveColor;
     active=false;
+    updateImagePreview(tx, ty, true);
   }
 }
 
-//  byte b=(byte)Integer.parseInt("00100001", 2);
-//println("0x"+hex(b));
+/**prints a u8glib drawBitmap instruction corresponding to a graphic area selected by the user**/
 public String[] parseZone() {
   Corners c=new Corners(new Coordinate(lx1, ly1), new Coordinate(lx2, ly2));
   //rounds selection length to nearest higher multiple of 8
-  int length8mul=0;
+  int length8mul=0;//selection width in multiples of 8 (17px wide=>3)
   if (c.cwidth>0) {
     if ((c.cwidth%8)>0) {
       length8mul=(c.cwidth/8)+1;
@@ -575,21 +533,20 @@ public String[] parseZone() {
   int bHeight=c.cheight+1;
   int arraySize=length8mul*bHeight;
   String[] r=new String[arraySize];
-  //println("array size:", arraySize);
-  //println("bHeight:", bHeight);
-  //println("length8mul:", length8mul);
-  //parse c.top jusqu'a c.bottom
   int ind=0;
   println("const uint8_t bitmap[] U8G_PROGMEM ={");
   for (int j=c.bottom; j<(c.bottom+bHeight); j++) {
     for ( int i=c.left; i<(length8mul*8+c.left); i=i+8) {
-      //println("reading byte at ", i, j);
-      r[ind]="0x"+hex((byte)Integer.parseInt(buildByte(i, j), 2))+",";
-      println(r[ind]);
+      //reading byte at (i,j);
+      r[ind]="0x"+hex((byte)Integer.parseInt(buildByte(i, j), 2));
     }
+    print(r[ind]);
+    println(",");
   }
   println("};");
-  println("u8g_drawBitmapP(&u8g,",c.left,",",c.bottom,",",length8mul,",",bHeight+",bitmap);");
+
+
+  println("u8g_drawBitmapP(&u8g,", c.left, ",", c.bottom, ",", length8mul, ",", bHeight+",bitmap);");
   return r;
 }
 
@@ -603,9 +560,22 @@ public String buildByte(int i, int j) {
   r+=vpxs[i+5][j].getStringStatus();
   r+=vpxs[i+6][j].getStringStatus();
   r+=vpxs[i+7][j].getStringStatus();
-  //print binary version
-  //println(r);
   return r;
+}
+
+public void updateImagePreview(int tx, int ty, boolean clear) {
+
+  try {
+    if (clear) {
+      thumbnail.pixels[tx+ty*gridX]=black;
+    } else {
+      thumbnail.pixels[tx+ty*gridX]=blue;
+    }
+  } 
+  catch (ArrayIndexOutOfBoundsException e) {
+    //ignoring dis
+  }
+  thumbnail.updatePixels();
 }
 
 /*element graphique pour historisation*/
@@ -625,7 +595,6 @@ class GraphicElement {
     this.y1=y;
     u8code="u8g_DrawPixel(&u8g"+ ","+x1+ ","+y1+");";
     outputCode.add(u8code);
-    //println(u8code);
   }
   //for boxes,frames,lines
   //(x1,y1) (x2,y2) begin:end points
@@ -644,7 +613,7 @@ class GraphicElement {
       outHeight=gheight+1;
       if (mode==DrawMode.BOX) {
         u8code="u8g_DrawBox(&u8g"+ ","+Math.min(x1, x2)+ ","+Math.min(y1, y2)+ ","+outWidth+","+outHeight+");";//+1 gros hack
-        println(u8code);
+        //println(u8code);
       } else if (mode==DrawMode.FRAME) {
         u8code="u8g_DrawFrame(&u8g"+ ","+Math.min(x1, x2)+ ","+Math.min(y1, y2)+ ","+outWidth+","+outHeight+");";//+1 gros  hack
         //println(u8code);
@@ -731,6 +700,19 @@ class Coordinate {
   public void setY(int y) {
     this.y1=y;
   }
+}
+
+void fileSelected(File selection) {
+  if (selection == null) {
+    println("Window was closed or the user hit cancel.");
+  } else {
+    println("Background image " + selection.getAbsolutePath());
+    backgroundImage=loadImage(selection.getAbsolutePath());
+  }
+}
+
+public void loadBackgroundImage() {
+  selectInput("Select a file to process:", "fileSelected");
 }
 
 static class Corners {
