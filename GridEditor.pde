@@ -112,6 +112,9 @@ void toolbarCycle() {
   } else if (key=='u') {
     loadBackgroundImage();
   }
+  else if (key=='y') {
+    clearBackgroundImage();
+  }
   /*
   else if (key=='m') {
    histo.clear();
@@ -709,6 +712,10 @@ void fileSelected(File selection) {
     println("Background image " + selection.getAbsolutePath());
     backgroundImage=loadImage(selection.getAbsolutePath());
   }
+}
+
+public void clearBackgroundImage() {
+  backgroundImage=null;
 }
 
 public void loadBackgroundImage() {
