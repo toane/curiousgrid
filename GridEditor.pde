@@ -637,7 +637,7 @@ class GraphicElement {
     this.x1=x;
     this.y1=y;
     this.radius=radius;
-    u8code="u8g_DrawCircle(&u8g"+ ","+x1+ ","+y1+ ","+radius+ ");";
+    u8code="u8g_DrawCircle(&u8g"+ ","+x1+ ","+y1+ ","+radius+ ",U8G_DRAW_ALL);";
     //println(u8code);
     outputCode.add(u8code);
   }
