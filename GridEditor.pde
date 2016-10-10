@@ -11,7 +11,7 @@ final int gridY=64;
 final int leftMargin=5;
 final int rightMargin=5;
 final int topMargin=5;
-final int bottomMargin=150;
+final int bottomMargin=160;
 ArrayList <Pixel> pxs;
 ArrayList <GraphicElement> histo;
 ArrayList <String> outputCode;
@@ -41,13 +41,10 @@ public enum DrawMode {
     PIXEL;
 }
 void setup() {
-  // size values: (gridX*zoom+leftMargin+rightMargin,gridY*zoom+topMargin+bottomMargin)
   size(1290, 800);  // Size must be the first statement
-  //surface.setResizable(true);
-  //surface.setSize(gridX*zoom+leftMargin+rightMargin,gridY*zoom+topMargin+bottomMargin+5); //why +5 ffs
   curMouse=new Coordinate(0, 0);
   lastUserMode=mode=DrawMode.PIXEL;
-  vpxs=new Pixel[gridX+1][gridY+1]; //+1 ++ hack
+  vpxs=new Pixel[gridX][gridY]; //+1 ++ hack
   textFont(createFont("Calibri-30.vlw", 20));
   thumbnail=createImage(gridX, gridY, RGB);//miniature de l'ecran en cours de creation
   stroke(130);   // Set line drawing color to white
@@ -82,10 +79,9 @@ void draw() {
   }
 
   fill(200);
-    if (backgroundImage != null) {
-      tint(255, 126);
+  if (backgroundImage != null) {
+    tint(255, 126);
     image(backgroundImage, (gridX*zoom)/2-backgroundImage.width/2, (gridY*zoom)/2-backgroundImage.height/2);
-    
   }
   tint(255, 255);
   text(mode+" MODE", 600, 700);
@@ -93,7 +89,6 @@ void draw() {
   rect(1149, 669, 129, 65);
   image(cicon, 50, 680);
   image(thumbnail, 1150, 670);
-
 }
 
 void toolbarCycle() {
@@ -111,8 +106,7 @@ void toolbarCycle() {
     mode=DrawMode.LINE;
   } else if (key=='u') {
     loadBackgroundImage();
-  }
-  else if (key=='y') {
+  } else if (key=='y') {
     clearBackgroundImage();
   }
   /*
@@ -339,7 +333,7 @@ void mouseMoved() {
   }
   //deselectionne ligne horizontale en dessous de la souris
   for (int i=0; i<gridX; i++) {
-    for (int j=curMouse.getY(); j<gridY+1; j++) {
+    for (int j=curMouse.getY(); j<gridY; j++) {
       p=vpxs[i][j];
       if (!p.getActive()) {
         p.setUnselected();
@@ -354,7 +348,7 @@ void mouseMoved() {
     }
   }
   //dessine une barre verticale au x de la souris
-  for (int i=0; i<gridY+1; i++) {
+  for (int i=0; i<gridY; i++) {
     p=vpxs[curMouse.getX()][i];
     if (!p.getActive()) {
       p.setSelected();
@@ -672,7 +666,7 @@ Coordinate getAbsolute(int mx, int my) {
   int cx, cy;
   cx=floor((mx-leftMargin)/zoom);
   cy=floor((my-topMargin)/zoom);
-  if (cy>=gridY+1) { //+1 == hack
+  if (cy>=gridY) {
     cy=gridY-1;
   }
   if (cx>=gridX) {
