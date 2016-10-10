@@ -1,9 +1,9 @@
 /*
 U8glib graphical screen editor for 128x64 screens
  https://github.com/olikraus/u8glib
- 
- mr-maurice@wanadoo.fr
  use keyboard to choose a tool
+ 
+  mr-maurice@wanadoo.fr
  */
 final int zoom = 10;
 final int gridX=128;
