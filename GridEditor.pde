@@ -5,9 +5,9 @@ U8glib graphical screen editor for 128x64 screens
  
   mr-maurice@wanadoo.fr
  */
-final int zoom = 10;
-final int gridX=128;
-final int gridY=64;
+final int cellSize = 10;
+final int gridX=128;//horizontal pixels
+final int gridY=64;//vertical pixels
 final int leftMargin=5;
 final int rightMargin=5;
 final int topMargin=5;
@@ -44,10 +44,10 @@ void setup() {
   size(1290, 800);  // Size must be the first statement
   curMouse=new Coordinate(0, 0);
   lastUserMode=mode=DrawMode.PIXEL;
-  vpxs=new Pixel[gridX][gridY]; //+1 ++ hack
+  vpxs=new Pixel[gridX][gridY];
   textFont(createFont("Calibri-30.vlw", 20));
-  thumbnail=createImage(gridX, gridY, RGB);//miniature de l'ecran en cours de creation
-  stroke(130);   // Set line drawing color to white
+  thumbnail=createImage(gridX, gridY, RGB);//miniature preview
+  stroke(130);  
   frameRate(15);
   itoolbt=loadImage("toolbartip.png");
   pxs=new ArrayList<Pixel>();
@@ -56,8 +56,8 @@ void setup() {
   int px=0;
   int py=0;
   Pixel p;
-  for (int i=leftMargin; i<width-rightMargin; i=i+zoom) {
-    for (int j=topMargin; j<height-bottomMargin; j=j+zoom) {
+  for (int i=leftMargin; i<cellSize*gridX; i=i+cellSize) {
+    for (int j=topMargin; j<cellSize*gridY; j=j+cellSize) {
       p=new Pixel(i, j, px, py);
       pxs.add(p);
       vpxs[px][py]=p;
@@ -81,14 +81,16 @@ void draw() {
   fill(200);
   if (backgroundImage != null) {
     tint(255, 126);
-    image(backgroundImage, (gridX*zoom)/2-backgroundImage.width/2, (gridY*zoom)/2-backgroundImage.height/2);
+    image(backgroundImage, (gridX*cellSize)/2-backgroundImage.width/2, (gridY*cellSize)/2-backgroundImage.height/2);
   }
   tint(255, 255);
   text(mode+" MODE", 600, 700);
   text(curMouse.getX()+":"+curMouse.getY(), 600, 720);
-  rect(1149, 669, 129, 65);
   image(cicon, 50, 680);
-  image(thumbnail, 1150, 670);
+  rect(width-gridX-2-rightMargin,669,gridX+1,gridY+1);
+  image(thumbnail, width-gridX-1-rightMargin, 670);
+
+
 }
 
 void toolbarCycle() {
@@ -460,9 +462,9 @@ returns true if pixel currently active
   boolean isOver(int mx, int my) {
     boolean r=false;
     if (mx >= x 
-      && mx <= x+zoom
+      && mx <= x+cellSize
       && my > y
-      && my < y+zoom) {
+      && my < y+cellSize) {
       r=true;
     }
     return r;
@@ -497,7 +499,7 @@ returns true if pixel currently active
 
   void display() {
     fill(c);
-    rect(x, y, zoom, zoom);
+    rect(x, y, cellSize, cellSize);
   }
 
   public void setActive() {
@@ -664,8 +666,8 @@ int distance() {
 
 Coordinate getAbsolute(int mx, int my) {
   int cx, cy;
-  cx=floor((mx-leftMargin)/zoom);
-  cy=floor((my-topMargin)/zoom);
+  cx=floor((mx-leftMargin)/cellSize);
+  cy=floor((my-topMargin)/cellSize);
   if (cy>=gridY) {
     cy=gridY-1;
   }
