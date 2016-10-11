@@ -1,7 +1,8 @@
 /*
-U8glib graphical screen editor for 128x64 screens
- https://github.com/olikraus/u8glib
- use keyboard to choose a tool
+U8glib graphical screen editor
+edit gridX and gridY for target screen size
+https://github.com/olikraus/u8glib
+use keyboard to choose a tool
  
   mr-maurice@wanadoo.fr
  */
