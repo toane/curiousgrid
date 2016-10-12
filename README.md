@@ -1,6 +1,7 @@
 Graphical u8glib editor in Processing
 
 generates C u8glib instructions for monochrome screens
+
 runs as a Processing sktech (processing.org)
 
 Features:
@@ -12,5 +13,3 @@ Features:
 Missing features:
 - freehand drawing
 - save/load
-
-needs the Processing ide: processing.org
