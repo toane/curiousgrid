@@ -84,12 +84,12 @@ void draw() {
     tint(255, 126);
 
     float bidx, bidy;//background display dimensions
-    float reduce=8;//resize ratio
+    float reduce=1;//resize ratio
     bidx=backgroundImage.width;
     bidy=backgroundImage.height;
 
     if (backgroundImage.width>(gridX*cellSize)) {
-      reduce=backgroundImage.width/(gridX*cellSize);
+      reduce=(float)backgroundImage.width/(gridX*cellSize);
       bidx=backgroundImage.width/reduce;
       bidy=backgroundImage.height/reduce;
       println("adjust to over width, ratio ", reduce);
@@ -97,7 +97,7 @@ void draw() {
 
     if (backgroundImage.height>(gridY*cellSize)) {
       println("calcul ", backgroundImage.height,"/",(gridY*cellSize));
-      reduce=backgroundImage.height/(gridY*cellSize);
+      reduce=(float)backgroundImage.height/(gridY*cellSize);
       bidx=backgroundImage.width/reduce;
       bidy=backgroundImage.height/reduce;
       println("adjust to over height, ratio ", reduce);
