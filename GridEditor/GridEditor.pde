@@ -1,10 +1,10 @@
 /*
 U8glib graphical screen editor
-edit gridX and gridY for target screen size
-https://github.com/olikraus/u8glib
-use keyboard to choose a tool
+ edit gridX and gridY for target screen size
+ https://github.com/olikraus/u8glib
+ use keyboard to choose a tool
  
-  mr-maurice@wanadoo.fr
+ mr-maurice@wanadoo.fr
  */
 final int cellSize = 10;
 final int gridX=128;//horizontal pixels
@@ -82,16 +82,38 @@ void draw() {
   fill(200);
   if (backgroundImage != null) {
     tint(255, 126);
-    image(backgroundImage, (gridX*cellSize)/2-backgroundImage.width/2, (gridY*cellSize)/2-backgroundImage.height/2);
+
+    float bidx, bidy;//background display dimensions
+    float reduce=8;//resize ratio
+    bidx=backgroundImage.width;
+    bidy=backgroundImage.height;
+
+    if (backgroundImage.width>(gridX*cellSize)) {
+      reduce=backgroundImage.width/(gridX*cellSize);
+      bidx=backgroundImage.width/reduce;
+      bidy=backgroundImage.height/reduce;
+      println("adjust to over width, ratio ", reduce);
+    }
+
+    if (backgroundImage.height>(gridY*cellSize)) {
+      println("calcul ", backgroundImage.height,"/",(gridY*cellSize));
+      reduce=backgroundImage.height/(gridY*cellSize);
+      bidx=backgroundImage.width/reduce;
+      bidy=backgroundImage.height/reduce;
+      println("adjust to over height, ratio ", reduce);
+    }
+
+    println(gridX*cellSize, gridY*cellSize);
+    println("[", backgroundImage.width, backgroundImage.height, "] -> ", bidx, bidy);
+    //image(backgroundImage, (gridX*cellSize)/2-backgroundImage.width/2, (gridY*cellSize)/2-backgroundImage.height/2);
+    image(backgroundImage, (gridX*cellSize)/2-bidx/2, (gridY*cellSize)/2-bidy/2, bidx, bidy);
   }
   tint(255, 255);
   text(mode+" MODE", 600, 700);
   text(curMouse.getX()+":"+curMouse.getY(), 600, 720);
   image(cicon, 50, 680);
-  rect(width-gridX-2-rightMargin,669,gridX+1,gridY+1);
+  rect(width-gridX-2-rightMargin, 669, gridX+1, gridY+1);
   image(thumbnail, width-gridX-1-rightMargin, 670);
-
-
 }
 
 void toolbarCycle() {
