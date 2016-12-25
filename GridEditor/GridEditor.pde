@@ -92,20 +92,19 @@ void draw() {
       reduce=(float)backgroundImage.width/(gridX*cellSize);
       bidx=backgroundImage.width/reduce;
       bidy=backgroundImage.height/reduce;
-      println("adjust to over width, ratio ", reduce);
+      
     }
 
     if (backgroundImage.height>(gridY*cellSize)) {
-      println("calcul ", backgroundImage.height,"/",(gridY*cellSize));
+      
       reduce=(float)backgroundImage.height/(gridY*cellSize);
       bidx=backgroundImage.width/reduce;
       bidy=backgroundImage.height/reduce;
-      println("adjust to over height, ratio ", reduce);
+      
     }
 
-    println(gridX*cellSize, gridY*cellSize);
-    println("[", backgroundImage.width, backgroundImage.height, "] -> ", bidx, bidy);
-    //image(backgroundImage, (gridX*cellSize)/2-backgroundImage.width/2, (gridY*cellSize)/2-backgroundImage.height/2);
+   // println(gridX*cellSize, gridY*cellSize);
+   // println("[", backgroundImage.width, backgroundImage.height, "] -> ", bidx, bidy);
     image(backgroundImage, (gridX*cellSize)/2-bidx/2, (gridY*cellSize)/2-bidy/2, bidx, bidy);
   }
   tint(255, 255);
