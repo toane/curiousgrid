@@ -6,9 +6,14 @@ U8glib graphical screen editor
  
  mr-maurice@wanadoo.fr
  */
-final int cellSize = 10;
-final int gridX=128;//horizontal pixels
-final int gridY=64;//vertical pixels
+
+///Main configuration variables
+final int gridX=128;//number of horizontal pixels to edit
+final int gridY=64;//number of vertical pixels to edit
+//
+
+final int cellSize = 10;//displayed dimension for each (square) pixel
+
 final int leftMargin=5;
 final int rightMargin=5;
 final int topMargin=5;
@@ -567,7 +572,7 @@ public String[] parseZone() {
   println("};");
 
 
-  println("u8g_drawBitmapP(&u8g,", c.left, ",", c.bottom, ",", length8mul, ",", bHeight+",bitmap);");
+  println("u8g_DrawBitmapP(&u8g,", c.left, ",", c.bottom, ",", length8mul, ",", bHeight+",bitmap);");
   return r;
 }
 
