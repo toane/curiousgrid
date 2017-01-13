@@ -29,7 +29,7 @@ DrawMode mode;
 DrawMode lastUserMode;
 Coordinate curMouse;
 PImage thumbnail;
-PImage backgroundImage;
+PImage backgroundImage, bitmapFile;
 static PImage itoolbt;
 static PImage cicon;
 boolean beginDraw2pt=false;
@@ -97,19 +97,17 @@ void draw() {
       reduce=(float)backgroundImage.width/(gridX*cellSize);
       bidx=backgroundImage.width/reduce;
       bidy=backgroundImage.height/reduce;
-      
     }
 
     if (backgroundImage.height>(gridY*cellSize)) {
-      
+
       reduce=(float)backgroundImage.height/(gridY*cellSize);
       bidx=backgroundImage.width/reduce;
       bidy=backgroundImage.height/reduce;
-      
     }
 
-   // println(gridX*cellSize, gridY*cellSize);
-   // println("[", backgroundImage.width, backgroundImage.height, "] -> ", bidx, bidy);
+    // println(gridX*cellSize, gridY*cellSize);
+    // println("[", backgroundImage.width, backgroundImage.height, "] -> ", bidx, bidy);
     image(backgroundImage, (gridX*cellSize)/2-bidx/2, (gridY*cellSize)/2-bidy/2, bidx, bidy);
   }
   tint(255, 255);
@@ -150,6 +148,8 @@ void toolbarCycle() {
     printCode();
   } else if (key=='o') {
     mode=DrawMode.PARSE;
+  } else if (key=='t') {
+    loadBitmap();
   }
 
   lastUserMode=mode;
@@ -171,7 +171,7 @@ void replay() {
     mode=g.getType();
     if (mode==DrawMode.PIXEL) {
       g.setupPixel();
-      drawPixel(true);
+      drawPixel(true, false);
     } else if (mode==DrawMode.LINE) {
       g.setupRect();
       drawLine(true);
@@ -290,28 +290,28 @@ public void drawCircle (boolean replay) {
   while ( x <= y ) {        // tant qu'on est dans le second octant
     lx1=x+x1;
     ly1=y+y1;
-    drawPixel(true);
+    drawPixel(true, false);
     lx1=y+x1;
     ly1=x+y1;
-    drawPixel(true) ;
+    drawPixel(true, false) ;
     lx1=-x+x1;
     ly1=y+y1;
-    drawPixel(true) ;
+    drawPixel(true, false) ;
     lx1=-y+x1;
     ly1=x+y1;
-    drawPixel(true) ;
+    drawPixel(true, false) ;
     lx1=x+x1;
     ly1=-y+y1;
-    drawPixel(true) ;
+    drawPixel(true, false) ;
     lx1=y+x1;
     ly1=-x+y1;
-    drawPixel(true) ;
+    drawPixel(true, false) ;
     lx1=-x+x1;
     ly1=-y+y1;
-    drawPixel(true) ;
+    drawPixel(true, false) ;
     lx1=-y+x1;
     ly1=-x+y1;
-    drawPixel(true) ;
+    drawPixel(true, false) ;
     if ( m > 0) {       //choix du point F
       y = y - 1 ;
       m = m - 8*y ;
@@ -321,11 +321,15 @@ public void drawCircle (boolean replay) {
   }
 }
 
-void drawPixel(boolean replay) {
-  if (!replay) {
-    vpxs[curMouse.getX()][curMouse.getY()].setActive();
-    lx1=curMouse.getX();
-    ly1=curMouse.getY();
+void drawPixel(boolean replay, boolean bitmap) {
+    if (!replay) {
+    if (!bitmap) {
+      vpxs[curMouse.getX()][curMouse.getY()].setActive();
+      lx1=curMouse.getX();
+      ly1=curMouse.getY();
+    }else{
+      vpxs[lx1][ly1].setActive();
+    }
     histo.add(new GraphicElement(mode, lx1, ly1));
   }
   //MODE REPLAY
@@ -389,7 +393,7 @@ void mouseReleased() {
   Pixel p;
   getAbsolute(mouseX, mouseY);
   if (mode==DrawMode.PIXEL) {
-    drawPixel(false);
+    drawPixel(false, false);
   } else if (mode==DrawMode.LINE||mode==DrawMode.DISC||mode==DrawMode.CIRCLE||mode==DrawMode.FRAME||mode==DrawMode.BOX||mode==DrawMode.PARSE) {
     if (!beginDraw2pt && !endDraw2pt) {
       beginDraw2pt=true;
@@ -732,8 +736,18 @@ void fileSelected(File selection) {
   if (selection == null) {
     println("Window was closed or the user hit cancel.");
   } else {
-    println("Background image " + selection.getAbsolutePath());
+    println("//Background image " + selection.getAbsolutePath());
     backgroundImage=loadImage(selection.getAbsolutePath());
+  }
+}
+
+void bitmapSelected(File selection) {
+  if (selection == null) {
+    println("Window was closed or the user hit cancel.");
+  } else {
+    println("//Bitmap file " + selection.getAbsolutePath());
+    bitmapFile=loadImage(selection.getAbsolutePath());
+    readBitmap();
   }
 }
 
@@ -743,6 +757,24 @@ public void clearBackgroundImage() {
 
 public void loadBackgroundImage() {
   selectInput("Select a file to process:", "fileSelected");
+}
+
+public void loadBitmap() {
+  selectInput("Select existing bitmap", "bitmapSelected");
+}
+
+public void readBitmap() {
+  color c;
+  for (int i=0; i<gridX; i++) {
+    for (int j=0; j<gridY; j++) {
+      c=bitmapFile.get(i, j);
+      if ( (c & 0xC0) !=0 ) {//masking alpha value, all non black pixels are considered "on"
+        lx1=i;
+        ly1=j;
+        drawPixel(false, true);
+      }
+    }
+  }
 }
 
 static class Corners {
