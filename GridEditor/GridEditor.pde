@@ -783,51 +783,98 @@ public void readBitmap() {
   rleEncoding(btmp);
 }
 
-//p true: pixel on, p false pixel off
+/*
+generates RLE compressed C code for the image p, off pixels first
+ p: binary image (todo: keep length);
+ */
 public void rleEncoding(ArrayList<Boolean> p) {
   ArrayList<Integer> pxc=new ArrayList();
   int black=0;
   int white=0;
-  println(p.size(), "pixels");
+  //println(p.size(), "pixels");
   Boolean lastseen=false;//current color of the pixels we're counting, starting w black (false)
   for (Boolean b : p) {
     if (lastseen != b) {
       if (!b) {
-        println(":", white);
-        pxc.add(white);
+        //println(":", white);
+        if (white>255) {
+          for (int i=1; i<white/255+1; i++) {
+            pxc.add(255);
+            pxc.add(0);
+          }
+          if (white%255>0) {
+            pxc.add(white%255);
+          }
+        } else { 
+          pxc.add(white);
+        }
       }
       if (b) {
-        println(":", black);
-        pxc.add(black);
+        //println(":", black);
+
+        if (black>255) {          
+          for (int i=1; i<black/255+1; i++) {
+            pxc.add(255);
+            pxc.add(0);
+          }
+          if (black%255>0) {
+            pxc.add(black%255);
+          }
+        } else {
+          pxc.add(black);
+        }
       }
     }
     if (!b) {//counting off pixels
       white=0;
       black++;
-      print("_");
+      //print("_");
     } else if (b) {//counting on pixels
       black=0;
       white++;
-      print("1");
+      //print("1");
     }
 
     lastseen=b;
   }
-
-//dealing with the last element
+  //dealing with the last element
   if (white>0) {
-    println(":", white);
-    pxc.add(white);
+    //println(":", white);
+    if (white>255) {
+      for (int i=1; i<white/255+1; i++) {
+        pxc.add(255);
+        pxc.add(0);
+      }
+      if (white%255>0) {
+        pxc.add(white%255);
+      }
+    } else {
+      pxc.add(white);
+    }
   }
   if (black>0) {
-    println(":", black);
-    pxc.add(black);
+    //println(":", black);
+    if (black>255) {
+
+      for (int i=1; i<black/255+1; i++) {
+        pxc.add(255);
+        pxc.add(0);
+      }
+      if (black%255>0) {
+        pxc.add(black%255);
+      }
+    } else {
+      pxc.add(black);
+    }
   }
 
-  println("");
-  for (Integer i : pxc) {
-    println(i);
-  }
+  println("//image width:"+bitmapFile.width);
+  println ("uint8_t img1[", pxc.size(), "] = {");
+  for (int i=0; i<pxc.size()-1; i++) {
+    print("0x"+hex(pxc.get(i), 2), ", ");
+  } 
+  print("0x"+hex(pxc.get(pxc.size()-1), 2));
+  print("};");
 }
 
 
