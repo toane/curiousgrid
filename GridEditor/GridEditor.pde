@@ -21,6 +21,7 @@ final int bottomMargin=160;
 ArrayList <Pixel> pxs;
 ArrayList <GraphicElement> histo;
 ArrayList <String> outputCode;
+ArrayList <Integer> rlePicture;
 color black=color(0, 0, 0);
 color blue=color(55, 133, 145);
 Pixel[][] vpxs;//acces aux pixels par coordonnee absolue (O -> 127,0 -> 63);
@@ -322,12 +323,12 @@ public void drawCircle (boolean replay) {
 }
 
 void drawPixel(boolean replay, boolean bitmap) {
-    if (!replay) {
+  if (!replay) {
     if (!bitmap) {
       vpxs[curMouse.getX()][curMouse.getY()].setActive();
       lx1=curMouse.getX();
       ly1=curMouse.getY();
-    }else{
+    } else {
       vpxs[lx1][ly1].setActive();
     }
     histo.add(new GraphicElement(mode, lx1, ly1));
@@ -765,17 +766,70 @@ public void loadBitmap() {
 
 public void readBitmap() {
   color c;
-  for (int i=0; i<gridX; i++) {
-    for (int j=0; j<gridY; j++) {
-      c=bitmapFile.get(i, j);
-      if ( (c & 0xC0) !=0 ) {//masking alpha value, all non black pixels are considered "on"
-        lx1=i;
-        ly1=j;
+  ArrayList <Boolean> btmp=new ArrayList();
+  for (int i=0; i<bitmapFile.height; i++) {
+    for (int j=0; j<bitmapFile.width; j++) {
+      c=bitmapFile.get(j, i)& 0xC0;
+      if ( c !=0 ) {//masking alpha value, all non black pixels are considered "on"
+        lx1=j;
+        ly1=i;
         drawPixel(false, true);
+        btmp.add(true);
+      } else {
+        btmp.add(false);
       }
     }
   }
+  rleEncoding(btmp);
 }
+
+//p true: pixel on, p false pixel off
+public void rleEncoding(ArrayList<Boolean> p) {
+  ArrayList<Integer> pxc=new ArrayList();
+  int black=0;
+  int white=0;
+  println(p.size(), "pixels");
+  Boolean lastseen=false;//current color of the pixels we're counting, starting w black (false)
+  for (Boolean b : p) {
+    if (lastseen != b) {
+      if (!b) {
+        println(":", white);
+        pxc.add(white);
+      }
+      if (b) {
+        println(":", black);
+        pxc.add(black);
+      }
+    }
+    if (!b) {//counting off pixels
+      white=0;
+      black++;
+      print("_");
+    } else if (b) {//counting on pixels
+      black=0;
+      white++;
+      print("1");
+    }
+
+    lastseen=b;
+  }
+
+//dealing with the last element
+  if (white>0) {
+    println(":", white);
+    pxc.add(white);
+  }
+  if (black>0) {
+    println(":", black);
+    pxc.add(black);
+  }
+
+  println("");
+  for (Integer i : pxc) {
+    println(i);
+  }
+}
+
 
 static class Corners {
   Coordinate a;
