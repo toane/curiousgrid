@@ -784,7 +784,7 @@ public void readBitmap() {
 }
 
 /*
-generates RLE compressed C code for the image p, off pixels first
+generates 8 bit RLE compressed C code for the image p, off pixels first
  p: binary image (todo: keep length);
  */
 public void rleEncoding(ArrayList<Boolean> p) {
@@ -867,13 +867,14 @@ public void rleEncoding(ArrayList<Boolean> p) {
       pxc.add(black);
     }
   }
-
-  println("//image width:"+bitmapFile.width);
-  println ("uint8_t img1[", pxc.size(), "] = {");
+  //builds C array code 
+  println("#define IMG_LENGTH "+bitmapFile.width);
+  println("#define RLE_BYTES ",pxc.size());
+  println ("uint8_t img1[RLE_BYTES] = {");
   for (int i=0; i<pxc.size()-1; i++) {
     print("0x"+hex(pxc.get(i), 2), ", ");
   } 
-  print("0x"+hex(pxc.get(pxc.size()-1), 2));
+  print("0x"+hex(pxc.get(pxc.size()-1), 2));//the last element doesn't need a ','
   print("};");
 }
 
@@ -894,3 +895,23 @@ static class Corners {
     cwidth=right-left;
   }
 }
+
+
+/*
+//draw method
+  uint8_t c=0x00,i,j,x=0,y=0;
+  for( i = 0; i < RLE_BYTES; i++ ) {//read image byte array
+    for (j=0;j<img1[i];j++){//write current byte to screen
+      if(x<IMG_LENGTH-1 ){
+        if (c==0x01){u8g_DrawPixel(&u8g,x,y);}
+        x++;
+      } else {
+        x=0;
+        y++;
+      }
+    }
+    c=c^0x01;
+  }
+
+
+*/
