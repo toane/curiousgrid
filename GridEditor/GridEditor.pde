@@ -30,7 +30,7 @@ DrawMode mode;
 DrawMode lastUserMode;
 Coordinate curMouse;
 PImage thumbnail;
-PImage backgroundImage, bitmapFile;
+PImage backgroundImage, bitmapFile=null;
 static PImage itoolbt;
 static PImage cicon;
 boolean beginDraw2pt=false;
@@ -752,6 +752,7 @@ void bitmapSelected(File selection) {
   }
 }
 
+
 public void clearBackgroundImage() {
   backgroundImage=null;
 }
@@ -761,16 +762,25 @@ public void loadBackgroundImage() {
 }
 
 public void loadBitmap() {
-  selectInput("Select existing bitmap", "bitmapSelected");
+  if (bitmapFile==null) {
+    selectInput("Select existing bitmap", "bitmapSelected");
+  } else if (bitmapFile!=null) {
+    bitmapFile=null;
+    clearAll();
+  }
 }
 
+/*
+*readfile: true if reading file, false if clearing screen
+ */
 public void readBitmap() {
+
   color c;
   ArrayList <Boolean> btmp=new ArrayList();
   for (int i=0; i<bitmapFile.height; i++) {
     for (int j=0; j<bitmapFile.width; j++) {
-      c=bitmapFile.get(j, i)& 0xC0;
-      if ( c !=0 ) {//masking alpha value, all non black pixels are considered "on"
+      c=bitmapFile.get(j, i)& 0xC0;//masking alpha value, all non black pixels are considered "on"
+      if ( c !=0 ) {
         lx1=j;
         ly1=i;
         drawPixel(false, true);
@@ -869,7 +879,7 @@ public void rleEncoding(ArrayList<Boolean> p) {
   }
   //builds C array code 
   println("#define IMG_LENGTH "+bitmapFile.width);
-  println("#define RLE_BYTES ",pxc.size());
+  println("#define RLE_BYTES ", pxc.size());
   println ("uint8_t img1[RLE_BYTES] = {");
   for (int i=0; i<pxc.size()-1; i++) {
     print("0x"+hex(pxc.get(i), 2), ", ");
@@ -899,19 +909,19 @@ static class Corners {
 
 /*
 //draw method
-  uint8_t c=0x00,i,j,x=0,y=0;
-  for( i = 0; i < RLE_BYTES; i++ ) {//read image byte array
-    for (j=0;j<img1[i];j++){//write current byte to screen
-      if(x<IMG_LENGTH-1 ){
-        if (c==0x01){u8g_DrawPixel(&u8g,x,y);}
-        x++;
-      } else {
-        x=0;
-        y++;
-      }
-    }
-    c=c^0x01;
-  }
-
-
-*/
+ uint8_t c=0x00,i,j,x=0,y=0;
+ for( i = 0; i < RLE_BYTES; i++ ) {//read image byte array
+ for (j=0;j<img1[i];j++){//write current byte to screen
+ if(x<IMG_LENGTH-1 ){
+ if (c==0x01){u8g_DrawPixel(&u8g,x,y);}
+ x++;
+ } else {
+ x=0;
+ y++;
+ }
+ }
+ c=c^0x01;
+ }
+ 
+ 
+ */
