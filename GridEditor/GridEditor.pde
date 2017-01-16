@@ -767,6 +767,7 @@ public void loadBitmap() {
   } else if (bitmapFile!=null) {
     bitmapFile=null;
     clearAll();
+    histo.clear();
   }
 }
 
@@ -886,6 +887,11 @@ public void rleEncoding(ArrayList<Boolean> p) {
   } 
   print("0x"+hex(pxc.get(pxc.size()-1), 2));//the last element doesn't need a ','
   print("};");
+
+
+  //draw method
+  println("");
+  println("//draw() method:\r\nuint8_t c=0x00,i,j,x=0,y=0;\r\n for( i = 0; i < RLE_BYTES; i++ ) {//read image byte array\\r\n for (j=0;j<img1[i];j++){//write current byte to screen\r\n if(x<IMG_LENGTH-1 ){\r\n if (c==0x01){u8g_DrawPixel(&u8g,x,y);}\r\n x++;\r\n } else {\r\n x=0;\r\n y++;\r\n }\r\n }\r\n c=c^0x01;\r\n }");
 }
 
 
