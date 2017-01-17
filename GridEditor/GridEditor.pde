@@ -775,7 +775,6 @@ public void loadBitmap() {
 *readfile: true if reading file, false if clearing screen
  */
 public void readBitmap() {
-
   color c;
   ArrayList <Boolean> btmp=new ArrayList();
   for (int i=0; i<bitmapFile.height; i++) {
@@ -802,7 +801,6 @@ public void rleEncoding(ArrayList<Boolean> p) {
   ArrayList<Integer> pxc=new ArrayList();
   int black=0;
   int white=0;
-  //println(p.size(), "pixels");
   Boolean lastseen=false;//current color of the pixels we're counting, starting w black (false)
   for (Boolean b : p) {
     if (lastseen != b) {
@@ -884,6 +882,7 @@ public void rleEncoding(ArrayList<Boolean> p) {
   println ("uint8_t img1[RLE_BYTES] = {");
   for (int i=0; i<pxc.size()-1; i++) {
     print("0x"+hex(pxc.get(i), 2), ", ");
+  //  print("d"+pxc.get(i));
   } 
   print("0x"+hex(pxc.get(pxc.size()-1), 2));//the last element doesn't need a ','
   print("};");
@@ -891,7 +890,7 @@ public void rleEncoding(ArrayList<Boolean> p) {
 
   //draw method
   println("");
-  println("//draw() method:\r\nuint8_t c=0x00,i,j,x=0,y=0;\r\n for( i = 0; i < RLE_BYTES; i++ ) {//read image byte array\\r\n for (j=0;j<img1[i];j++){//write current byte to screen\r\n if(x<IMG_LENGTH-1 ){\r\n if (c==0x01){u8g_DrawPixel(&u8g,x,y);}\r\n x++;\r\n } else {\r\n x=0;\r\n y++;\r\n }\r\n }\r\n c=c^0x01;\r\n }");
+  println("\t//draw method\r\n\tuint8_t c=0x00,i,j,x=0,y=0;\r\n\tfor( i = 0; i < RLE_BYTES; i++ ) {//read image byte array\r\n\r\n\t\tfor (j=0;j<img1[i];j++){//write current byte to screen\r\n\r\n\t\t\tif (c==0x01){\r\n\t\t\t\tu8g_DrawPixel(&u8g,x,y);\r\n\t\t\t}\r\n\t\t\tif(x<IMG_LENGTH-1){\r\n\t\t\t\tx++;\r\n\t\t\t}else{\r\n\t\t\t\tx=0;\r\n\t\t\t\ty=y+1;\r\n\t\t\t}\r\n\t\t}\r\n\t\tc=c^0x01;\r\n\t}");
 }
 
 
