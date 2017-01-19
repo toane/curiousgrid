@@ -890,7 +890,7 @@ public void rleEncoding(ArrayList<Boolean> p) {
 
   //draw method
   println("");
-  println("\t//draw method\r\n\tuint8_t c=0x00,i,j,x=0,y=0;\r\n\tfor( i = 0; i < RLE_BYTES; i++ ) {//read image byte array\r\n\r\n\t\tfor (j=0;j<img1[i];j++){//write current byte to screen\r\n\r\n\t\t\tif (c==0x01){\r\n\t\t\t\tu8g_DrawPixel(&u8g,x,y);\r\n\t\t\t}\r\n\t\t\tif(x<IMG_LENGTH-1){\r\n\t\t\t\tx++;\r\n\t\t\t}else{\r\n\t\t\t\tx=0;\r\n\t\t\t\ty=y+1;\r\n\t\t\t}\r\n\t\t}\r\n\t\tc=c^0x01;\r\n\t}");
+  println("\tuint8_t c=0x00,j,x=0,y=0;\r\n\tuint16_t i;\r\n\t\tfor( i = 0; i < RLE_BYTES; i++ ) {//read image byte array\r\n\r\n\t\t\tfor (j=0;j<img1[i];j++){//write current byte to screen\r\n\r\n\t\t\t\tif (c==0x01){\r\n\t\t\t\t\tu8g_DrawPixel(&u8g,x,y);\r\n\t\t\t\t}\r\n\t\t\t\tif(x<IMG_LENGTH-1){\r\n\t\t\t\t\tx++;\r\n\t\t\t\t}else{\r\n\t\t\t\t\tx=0;\r\n\t\t\t\t\ty=y+1;\r\n\t\t\t\t}\r\n\t\t\t}\r\n\t\t\tc=c^0x01;\r\n\t\t}");
 }
 
 
