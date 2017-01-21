@@ -777,15 +777,46 @@ public void loadBitmap() {
   }
 }
 
+
+public Corners getBoundaries(PImage im) {
+  color c;
+  int x1=gridX, y1=gridY;//coordinates for top left corner
+  int x2=0, y2=0;//coordinates for bottom right corner
+  for (int i=0; i<im.height; i++) {
+    for (int j=0; j<im.width; j++) {
+      c=im.get(j, i)& 0xC0;//masking alpha value, all non black pixels are considered "on"
+      if ( c !=0 ) {
+        if (j<x1) {
+          x1=j;
+        }
+        if (i<y1) {
+          y1=i;
+        }
+
+        if (j>x2) {
+          x2=j;
+        }
+        if (i>y2) {
+          y2=i;
+        }
+      }
+    }
+  }
+  return new Corners(new Coordinate(x1, y1), new Coordinate(x2, y2));
+}
+
 /*
 *readfile: true if reading file, false if clearing screen
  */
 public void readBitmap() {
   color c;
   ArrayList <Boolean> btmp=new ArrayList();
-  int x=0, y=0;//coordinates of the first on pixel we find
-  for (int i=0; i<bitmapFile.height; i++) {
-    for (int j=0; j<bitmapFile.width; j++) {
+  Corners cdn=getBoundaries(bitmapFile);
+  //println("topleft at", cdn.left, cdn.bottom);
+  //println("bottom right at", cdn.right, cdn.top); 
+  int x=cdn.left, y=cdn.top;//coordinates of the first on pixel we find
+  for (int i=cdn.bottom; i<cdn.bottom+cdn.cheight+1; i++) {
+    for (int j=cdn.left; j<cdn.left+cdn.cwidth+1; j++) {
       c=bitmapFile.get(j, i)& 0xC0;//masking alpha value, all non black pixels are considered "on"
       if ( c !=0 ) {
         lx1=j;
@@ -793,13 +824,11 @@ public void readBitmap() {
         drawPixel(true, true);
         btmp.add(true);
       } else {
-
-          btmp.add(false);
-        
+        btmp.add(false);
       }
     }
   }
-  rleEncoding(btmp, x, y);
+  rleEncoding(btmp, cdn);
 }
 
 /*
@@ -807,7 +836,9 @@ generates 8 bit RLE compressed C code for the image p, off pixels first
  p: binary image (todo: keep length);
  x,y: coordinates of the first on pixel for the image
  */
-public void rleEncoding(ArrayList<Boolean> p, int fx, int fy) {
+public void rleEncoding(ArrayList<Boolean> p, Corners cdn) {
+  int fx=cdn.left;
+  int fy=cdn.bottom;
   ArrayList<Integer> pxc=new ArrayList();
   int black=0;
   int white=0;
@@ -898,7 +929,7 @@ public void rleEncoding(ArrayList<Boolean> p, int fx, int fy) {
     }
   }
   //builds C array code 
-  println("#define IMG_LENGTH "+(bitmapFile.width-fx));
+  println("#define IMG_LENGTH "+(cdn.cwidth+1));
   println("#define RLE_BYTES ", pxc.size());
   println ("uint8_t img1[RLE_BYTES] = {");
   for (int i=0; i<pxc.size()-1; i++) {
@@ -914,7 +945,7 @@ public void rleEncoding(ArrayList<Boolean> p, int fx, int fy) {
   println("//draw() method:");
   println ("\tuint8_t fx=", fx, ";");
   println ("\tuint8_t fy=", fy, ";");
-  println("\tuint8_t x=fx,y=fy;\r\n\tuint8_t c=0x01;//color code for the first color in the RLE (0x00: black, 0x01:white)\r\n\tuint16_t i;\r\n\tuint8_t j;\r\n\tfor( i = 0; i < RLE_BYTES; i++ ) {//read image byte array\r\n\t\tfor (j=0;j<img1[i];j++){//write current byte to screen\r\n\r\n\t\t\tif (c==0x01){\r\n\t\t\t\tu8g_DrawPixel(&u8g,x,y);\r\n\t\t\t}\r\n\t\t\tif(x<IMG_LENGTH-1){\r\n\t\t\t\tx++;\r\n\t\t\t}else{\r\n\t\t\t\tx=fx;\r\n\t\t\t\ty=y+1;\r\n\t\t\t}\r\n\t\t}\r\n\t\tc=c^0x01;//toggle color\r\n\t}");
+  println("\tuint8_t x=fx,y=fy;\r\n\tuint8_t c=0x01;//color code for the first color in the RLE (0x00: black, 0x01:white)\r\n\tuint16_t i;\r\n\tuint8_t j;\r\n\tfor( i = 0; i < RLE_BYTES; i++ ) {//read image byte array\r\n\t\tfor (j=0;j<img1[i];j++){//write current byte to screen\r\n\r\n\t\t\tif (c==0x01){\r\n\t\t\t\tu8g_DrawPixel(&u8g,x,y);\r\n\t\t\t}\r\n\t\t\tif(x<fx+IMG_LENGTH-1){\r\n\t\t\t\tx++;\r\n\t\t\t}else{\r\n\t\t\t\tx=fx;\r\n\t\t\t\ty=y+1;\r\n\t\t\t}\r\n\t\t}\r\n\t\tc=c^0x01;//toggle color\r\n\t}");
 }
 
 
