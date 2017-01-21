@@ -135,7 +135,7 @@ void toolbarCycle() {
   } else if (key=='u') {
     loadBackgroundImage();
   } else if (key=='y') {
-    clearBackgroundImage();
+    //clearBackgroundImage();
   }
   /*
   else if (key=='m') {
@@ -758,7 +758,7 @@ public void clearBackgroundImage() {
 }
 
 public void loadBackgroundImage() {
-    if (backgroundImage==null) {
+  if (backgroundImage==null) {
     selectInput("Select existing bitmap", "fileSelected");
   } else if (backgroundImage!=null) {
     backgroundImage=null;
@@ -783,6 +783,7 @@ public void loadBitmap() {
 public void readBitmap() {
   color c;
   ArrayList <Boolean> btmp=new ArrayList();
+  int x=0, y=0;//coordinates of the first on pixel we find
   for (int i=0; i<bitmapFile.height; i++) {
     for (int j=0; j<bitmapFile.width; j++) {
       c=bitmapFile.get(j, i)& 0xC0;//masking alpha value, all non black pixels are considered "on"
@@ -792,50 +793,58 @@ public void readBitmap() {
         drawPixel(true, true);
         btmp.add(true);
       } else {
-        btmp.add(false);
+
+          btmp.add(false);
+        
       }
     }
   }
-  rleEncoding(btmp);
+  rleEncoding(btmp, x, y);
 }
 
 /*
 generates 8 bit RLE compressed C code for the image p, off pixels first
  p: binary image (todo: keep length);
+ x,y: coordinates of the first on pixel for the image
  */
-public void rleEncoding(ArrayList<Boolean> p) {
+public void rleEncoding(ArrayList<Boolean> p, int fx, int fy) {
   ArrayList<Integer> pxc=new ArrayList();
   int black=0;
   int white=0;
-  Boolean lastseen=false;//current color of the pixels we're counting, starting w black (false)
+  Boolean lastseen=true;//current color of the pixels we're counting, starting w black (false)
   for (Boolean b : p) {
     if (lastseen != b) {
       if (!b) {
         //println(":", white);
         if (white>255) {
           for (int i=1; i<white/255+1; i++) {
+
             pxc.add(255);
             pxc.add(0);
           }
           if (white%255>0) {
+
             pxc.add(white%255);
           }
         } else { 
+
           pxc.add(white);
         }
       }
       if (b) {
-        //println(":", black);
 
         if (black>255) {          
           for (int i=1; i<black/255+1; i++) {
+
             pxc.add(255);
             pxc.add(0);
           }
           if (black%255>0) {
+
             pxc.add(black%255);
           }
         } else {
+
           pxc.add(black);
         }
       }
@@ -857,13 +866,16 @@ public void rleEncoding(ArrayList<Boolean> p) {
     //println(":", white);
     if (white>255) {
       for (int i=1; i<white/255+1; i++) {
+
         pxc.add(255);
         pxc.add(0);
       }
       if (white%255>0) {
+
         pxc.add(white%255);
       }
     } else {
+
       pxc.add(white);
     }
   }
@@ -872,23 +884,26 @@ public void rleEncoding(ArrayList<Boolean> p) {
     if (black>255) {
 
       for (int i=1; i<black/255+1; i++) {
+
         pxc.add(255);
         pxc.add(0);
       }
       if (black%255>0) {
+
         pxc.add(black%255);
       }
     } else {
+
       pxc.add(black);
     }
   }
   //builds C array code 
-  println("#define IMG_LENGTH "+bitmapFile.width);
+  println("#define IMG_LENGTH "+(bitmapFile.width-fx));
   println("#define RLE_BYTES ", pxc.size());
   println ("uint8_t img1[RLE_BYTES] = {");
   for (int i=0; i<pxc.size()-1; i++) {
     print("0x"+hex(pxc.get(i), 2), ", ");
-  //  print("d"+pxc.get(i));
+    //  print("d"+pxc.get(i));
   } 
   print("0x"+hex(pxc.get(pxc.size()-1), 2));//the last element doesn't need a ','
   print("};");
@@ -897,7 +912,9 @@ public void rleEncoding(ArrayList<Boolean> p) {
   //draw method
   println("");
   println("//draw() method:");
-  println("\tuint8_t c=0x00,j,x=0,y=0;\r\n\tuint16_t i;\r\n\t\tfor( i = 0; i < RLE_BYTES; i++ ) {//read image byte array\r\n\r\n\t\t\tfor (j=0;j<img1[i];j++){//write current byte to screen\r\n\r\n\t\t\t\tif (c==0x01){\r\n\t\t\t\t\tu8g_DrawPixel(&u8g,x,y);\r\n\t\t\t\t}\r\n\t\t\t\tif(x<IMG_LENGTH-1){\r\n\t\t\t\t\tx++;\r\n\t\t\t\t}else{\r\n\t\t\t\t\tx=0;\r\n\t\t\t\t\ty=y+1;\r\n\t\t\t\t}\r\n\t\t\t}\r\n\t\t\tc=c^0x01;\r\n\t\t}");
+  println ("\tuint8_t fx=", fx, ";");
+  println ("\tuint8_t fy=", fy, ";");
+  println("\tuint8_t x=fx,y=fy;\r\n\tuint8_t c=0x01;//color code for the first color in the RLE (0x00: black, 0x01:white)\r\n\tuint16_t i;\r\n\tuint8_t j;\r\n\tfor( i = 0; i < RLE_BYTES; i++ ) {//read image byte array\r\n\t\tfor (j=0;j<img1[i];j++){//write current byte to screen\r\n\r\n\t\t\tif (c==0x01){\r\n\t\t\t\tu8g_DrawPixel(&u8g,x,y);\r\n\t\t\t}\r\n\t\t\tif(x<IMG_LENGTH-1){\r\n\t\t\t\tx++;\r\n\t\t\t}else{\r\n\t\t\t\tx=fx;\r\n\t\t\t\ty=y+1;\r\n\t\t\t}\r\n\t\t}\r\n\t\tc=c^0x01;//toggle color\r\n\t}");
 }
 
 
@@ -920,20 +937,25 @@ static class Corners {
 
 
 /*
-//draw method
- uint8_t c=0x00,i,j,x=0,y=0;
+// unescaped draw method
+ uint8_t c=0x01;//color code for the first color in the RLE (0x00: black, 0x01:white)
+ uint16_t i;
+ uint8_t j;
  for( i = 0; i < RLE_BYTES; i++ ) {//read image byte array
- for (j=0;j<img1[i];j++){//write current byte to screen
- if(x<IMG_LENGTH-1 ){
- if (c==0x01){u8g_DrawPixel(&u8g,x,y);}
- x++;
- } else {
- x=0;
- y++;
- }
- }
- c=c^0x01;
- }
  
+ for (j=0;j<img1[i];j++){//write current byte to screen
+ 
+ if (c==0x01){
+ u8g_DrawPixel(&u8g,fx,fy);
+ }
+ if(fx<IMG_LENGTH-1){
+ fx++;
+ }else{
+ fx=0;
+ fy=fy+1;
+ }
+ }
+ c=c^0x01;//toggle color
+ }
  
  */
