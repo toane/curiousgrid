@@ -30,7 +30,7 @@ DrawMode mode;
 DrawMode lastUserMode;
 Coordinate curMouse;
 PImage thumbnail;
-PImage backgroundImage, bitmapFile=null;
+PImage backgroundImage=null, bitmapFile=null;
 static PImage itoolbt;
 static PImage cicon;
 boolean beginDraw2pt=false;
@@ -758,7 +758,13 @@ public void clearBackgroundImage() {
 }
 
 public void loadBackgroundImage() {
-  selectInput("Select a file to process:", "fileSelected");
+    if (backgroundImage==null) {
+    selectInput("Select existing bitmap", "fileSelected");
+  } else if (backgroundImage!=null) {
+    backgroundImage=null;
+    //clearAll();
+    //histo.clear();
+  }
 }
 
 public void loadBitmap() {
@@ -783,7 +789,7 @@ public void readBitmap() {
       if ( c !=0 ) {
         lx1=j;
         ly1=i;
-        drawPixel(false, true);
+        drawPixel(true, true);
         btmp.add(true);
       } else {
         btmp.add(false);
@@ -890,6 +896,7 @@ public void rleEncoding(ArrayList<Boolean> p) {
 
   //draw method
   println("");
+  println("//draw() method:");
   println("\tuint8_t c=0x00,j,x=0,y=0;\r\n\tuint16_t i;\r\n\t\tfor( i = 0; i < RLE_BYTES; i++ ) {//read image byte array\r\n\r\n\t\t\tfor (j=0;j<img1[i];j++){//write current byte to screen\r\n\r\n\t\t\t\tif (c==0x01){\r\n\t\t\t\t\tu8g_DrawPixel(&u8g,x,y);\r\n\t\t\t\t}\r\n\t\t\t\tif(x<IMG_LENGTH-1){\r\n\t\t\t\t\tx++;\r\n\t\t\t\t}else{\r\n\t\t\t\t\tx=0;\r\n\t\t\t\t\ty=y+1;\r\n\t\t\t\t}\r\n\t\t\t}\r\n\t\t\tc=c^0x01;\r\n\t\t}");
 }
 
