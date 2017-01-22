@@ -784,7 +784,7 @@ public Corners getBoundaries(PImage im) {
   int x2=0, y2=0;//coordinates for bottom right corner
   for (int i=0; i<im.height; i++) {
     for (int j=0; j<im.width; j++) {
-      c=im.get(j, i)& 0xC0;//masking alpha value, all non black pixels are considered "on"
+      c=im.get(j, i) <<8 ;//masking alpha value, all non black pixels are considered "on"
       if ( c !=0 ) {
         if (j<x1) {
           x1=j;
@@ -817,7 +817,7 @@ public void readBitmap() {
   int x=cdn.left, y=cdn.top;//coordinates of the first on pixel we find
   for (int i=cdn.bottom; i<cdn.bottom+cdn.cheight+1; i++) {
     for (int j=cdn.left; j<cdn.left+cdn.cwidth+1; j++) {
-      c=bitmapFile.get(j, i)& 0xC0;//masking alpha value, all non black pixels are considered "on"
+      c=(bitmapFile.get(j, i) << 8);//masking alpha value, all non black pixels are considered "on"
       if ( c !=0 ) {
         lx1=j;
         ly1=i;
