@@ -5,9 +5,9 @@ generates C u8glib instructions for monochrome screens
 runs as a Processing sktech (processing.org)
 
 Features:
-- variable target screen size (default 128x64)
+- Run Length Encoding compression for imported images
 - image import for tracing
-- library compatible bitmap creation (drawBitmap function)
+- variable target screen size (default 128x64)
 - 1:1 preview
 
 Missing features:
