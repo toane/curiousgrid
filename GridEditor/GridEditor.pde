@@ -61,8 +61,8 @@ void setup() {
   codeFrame.setSize(1000, 500);
   codeArea=new JTextArea();
   codeArea.setLineWrap(true);
-  codeArea.setBackground(new Color(20,20,20));
-  codeArea.setForeground(new Color(200,200,200));
+  codeArea.setBackground(new Color(20, 20, 20));
+  codeArea.setForeground(new Color(200, 200, 200));
   codeArea.setEditable(false);
   JScrollPane scrollPane = new JScrollPane(codeArea);
   codeFrame.add(scrollPane);
@@ -771,8 +771,13 @@ void bitmapSelected(File selection) {
   } else {
     println("//Bitmap file " + selection.getAbsolutePath());
     bitmapFile=loadImage(selection.getAbsolutePath());
-    codeFrame.setVisible(true);
-    readBitmap();
+
+    if (bitmapFile.width != gridX || bitmapFile.height != gridY) {
+      JOptionPane.showMessageDialog(frame, "Picture file should be "+gridX+" by "+gridY+"px");
+    } else {    
+      readBitmap();
+      codeFrame.setVisible(true);
+    }
   }
 }
 
