@@ -6,6 +6,12 @@ U8glib graphical screen editor
  
  mr-maurice@wanadoo.fr
  */
+import javax.swing.*;
+import java.awt.Color;
+import java.awt.BorderLayout;
+import java.awt.event.*;
+import java.awt.datatransfer.*;
+import java.awt.Toolkit;
 
 ///Main configuration variables
 final int gridX=128;//number of horizontal pixels to edit
@@ -37,6 +43,9 @@ boolean beginDraw2pt=false;
 boolean endDraw2pt=false;
 int lx1, ly1, lx2, ly2;//end points for lines
 int lmx1, lmy1;
+JFrame codeFrame;
+JTextArea codeArea;
+
 public enum DrawMode {
   LINE, 
     CIRCLE, 
@@ -48,6 +57,20 @@ public enum DrawMode {
     PIXEL;
 }
 void setup() {
+  codeFrame=new JFrame("C code");
+  codeFrame.setSize(1000, 500);
+  codeArea=new JTextArea();
+  codeArea.setLineWrap(true);
+  codeArea.setBackground(new Color(20,20,20));
+  codeArea.setForeground(new Color(200,200,200));
+  codeArea.setEditable(false);
+  JScrollPane scrollPane = new JScrollPane(codeArea);
+  codeFrame.add(scrollPane);
+  //codeFrame.getContentPane().add(scrollPane,BorderLayout.NORTH);
+  JButton copyButton=new JButton("copy to clipboard");
+  copyButton.addActionListener(new ButtonListener());
+  codeFrame.add(copyButton, BorderLayout.SOUTH);
+
   size(1290, 800);  // Size must be the first statement
   curMouse=new Coordinate(0, 0);
   lastUserMode=mode=DrawMode.PIXEL;
@@ -748,6 +771,7 @@ void bitmapSelected(File selection) {
   } else {
     println("//Bitmap file " + selection.getAbsolutePath());
     bitmapFile=loadImage(selection.getAbsolutePath());
+    codeFrame.setVisible(true);
     readBitmap();
   }
 }
@@ -774,6 +798,8 @@ public void loadBitmap() {
     bitmapFile=null;
     clearAll();
     histo.clear();
+    codeArea.setText("");
+    codeFrame.setVisible(false);
   }
 }
 
@@ -814,7 +840,7 @@ public void readBitmap() {
   Corners cdn=getBoundaries(bitmapFile);
   //println("topleft at", cdn.left, cdn.bottom);
   //println("bottom right at", cdn.right, cdn.top); 
-  int x=cdn.left, y=cdn.top;//coordinates of the first on pixel we find
+  //int x=cdn.left, y=cdn.top;//coordinates of the first on pixel we find
   for (int i=cdn.bottom; i<cdn.bottom+cdn.cheight+1; i++) {
     for (int j=cdn.left; j<cdn.left+cdn.cwidth+1; j++) {
       c=(bitmapFile.get(j, i) << 8);//masking alpha value, all non black pixels are considered "on"
@@ -828,6 +854,7 @@ public void readBitmap() {
       }
     }
   }
+
   rleEncoding(btmp, cdn);
 }
 
@@ -930,22 +957,36 @@ public void rleEncoding(ArrayList<Boolean> p, Corners cdn) {
   }
   //builds C array code 
   println("#define IMG_LENGTH "+(cdn.cwidth+1));
+  codeArea.append("#define IMG_LENGTH "+(cdn.cwidth+1)+"\n");
   println("#define RLE_BYTES ", pxc.size());
+  codeArea.append("#define RLE_BYTES "+ pxc.size()+"\n");
   println ("uint8_t img1[RLE_BYTES] = {");
+  codeArea.append("uint8_t img1[RLE_BYTES] = {");
   for (int i=0; i<pxc.size()-1; i++) {
-    print("0x"+hex(pxc.get(i), 2), ", ");
+    print("0x"+hex(pxc.get(i), 2), ", ");    
+    codeArea.append("0x"+hex(pxc.get(i), 2)+ ", ");
     //  print("d"+pxc.get(i));
   } 
+  codeArea.append("0x"+hex(pxc.get(pxc.size()-1), 2));//the last element doesn't need a ','
   print("0x"+hex(pxc.get(pxc.size()-1), 2));//the last element doesn't need a ','
+  codeArea.append("};"+"\n");
   print("};");
 
 
   //draw method
   println("");
-  println("//draw() method:");
+  println("void draw(void){");
   println ("\tuint8_t fx=", fx, ";");
   println ("\tuint8_t fy=", fy, ";");
   println("\tuint8_t x=fx,y=fy;\r\n\tuint8_t c=0x01;//color code for the first color in the RLE (0x00: black, 0x01:white)\r\n\tuint16_t i;\r\n\tuint8_t j;\r\n\tfor( i = 0; i < RLE_BYTES; i++ ) {//read image byte array\r\n\t\tfor (j=0;j<img1[i];j++){//write current byte to screen\r\n\r\n\t\t\tif (c==0x01){\r\n\t\t\t\tu8g_DrawPixel(&u8g,x,y);\r\n\t\t\t}\r\n\t\t\tif(x<fx+IMG_LENGTH-1){\r\n\t\t\t\tx++;\r\n\t\t\t}else{\r\n\t\t\t\tx=fx;\r\n\t\t\t\ty=y+1;\r\n\t\t\t}\r\n\t\t}\r\n\t\tc=c^0x01;//toggle color\r\n\t}");
+  println ("\r\n}");
+
+  println("");
+  codeArea.append("void draw(void){"+"\n");
+  codeArea.append ("\tuint8_t fx="+fx+ ";"+"\n");
+  codeArea.append ("\tuint8_t fy="+ fy+";"+"\n");
+  codeArea.append("\tuint8_t x=fx,y=fy;\r\n\tuint8_t c=0x01;//color code for the first color in the RLE (0x00: black, 0x01:white)\r\n\tuint16_t i;\r\n\tuint8_t j;\r\n\tfor( i = 0; i < RLE_BYTES; i++ ) {//read image byte array\r\n\t\tfor (j=0;j<img1[i];j++){//write current byte to screen\r\n\r\n\t\t\tif (c==0x01){\r\n\t\t\t\tu8g_DrawPixel(&u8g,x,y);\r\n\t\t\t}\r\n\t\t\tif(x<fx+IMG_LENGTH-1){\r\n\t\t\t\tx++;\r\n\t\t\t}else{\r\n\t\t\t\tx=fx;\r\n\t\t\t\ty=y+1;\r\n\t\t\t}\r\n\t\t}\r\n\t\tc=c^0x01;//toggle color\r\n\t}");
+  codeArea.append ("\r\n}");
 }
 
 
@@ -966,6 +1007,16 @@ static class Corners {
   }
 }
 
+/*listener for the copy to clipboard button*/
+public class ButtonListener implements ActionListener
+{
+  public void actionPerformed(ActionEvent e)
+  {
+    StringSelection stringSelection = new StringSelection(codeArea.getText());
+    Clipboard clpbrd = Toolkit.getDefaultToolkit().getSystemClipboard();
+    clpbrd.setContents(stringSelection, null);
+  }
+}
 
 /*
 // unescaped draw method
