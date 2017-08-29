@@ -1,4 +1,4 @@
-/*
+/* //<>//
 U8glib graphical screen editor
  edit gridX and gridY for target screen size
  https://github.com/olikraus/u8glib
@@ -26,6 +26,7 @@ final int topMargin=5;
 final int bottomMargin=160;
 ArrayList <Pixel> pxs;
 ArrayList <GraphicElement> histo;
+GraphicElement lastGraphicElement=null;//last drawn (used to historize bitmap drawings) 
 ArrayList <String> outputCode;
 ArrayList <Integer> rlePicture;
 color black=color(0, 0, 0);
@@ -57,6 +58,7 @@ public enum DrawMode {
     PIXEL;
 }
 void setup() {
+  size(1290, 800);  // Size must be the first statement
   codeFrame=new JFrame("C code");
   codeFrame.setSize(1000, 500);
   codeArea=new JTextArea();
@@ -71,7 +73,6 @@ void setup() {
   copyButton.addActionListener(new ButtonListener());
   codeFrame.add(copyButton, BorderLayout.SOUTH);
 
-  size(1290, 800);  // Size must be the first statement
   curMouse=new Coordinate(0, 0);
   lastUserMode=mode=DrawMode.PIXEL;
   vpxs=new Pixel[gridX][gridY];
@@ -139,6 +140,7 @@ void draw() {
   text(curMouse.getX()+":"+curMouse.getY(), 600, 720);
   image(cicon, 50, 680);
   rect(width-gridX-2-rightMargin, 669, gridX+1, gridY+1);
+  //display preview thumbnail
   image(thumbnail, width-gridX-1-rightMargin, 670);
 }
 
@@ -181,8 +183,21 @@ void toolbarCycle() {
 
 void undoLast() {
   try {
-    histo.remove(histo.size()-1);//on retire le dernier element de l'historique
-    outputCode.remove(outputCode.size()-1);
+    GraphicElement ge=histo.get(histo.size()-1);//recuperer dernier element
+    if (ge.getPrevious()!=null) {//if last element is part of a bitmap
+      while (ge.getPrevious()!=null) {//verifier s'il possede un prev
+      //println("del ",ge," linked to ",ge.getPrevious());
+        //retirer l'element de l'historique
+        ge=ge.getPrevious();
+        histo.remove(histo.size()-1);
+      }
+      histo.remove(histo.size()-1);//on retire le dernier element (dont ge.getprevious()==null
+      //println("del ",ge," linked to ",ge.getPrevious());
+      lastGraphicElement=null;
+    } else {
+      histo.remove(histo.size()-1);//on retire le dernier element de l'historique
+      outputCode.remove(outputCode.size()-1);
+    }
     clearAll();
     replay();
   } 
@@ -351,13 +366,17 @@ void drawPixel(boolean replay, boolean bitmap) {
       vpxs[curMouse.getX()][curMouse.getY()].setActive();
       lx1=curMouse.getX();
       ly1=curMouse.getY();
+      histo.add(new GraphicElement(mode, lx1, ly1));
     } else {
       vpxs[lx1][ly1].setActive();
+      GraphicElement ge=new GraphicElement(mode, lx1, ly1, lastGraphicElement);
+      histo.add(ge);
+      lastGraphicElement=ge;
     }
-    histo.add(new GraphicElement(mode, lx1, ly1));
+    //histo.add(new GraphicElement(mode, lx1, ly1));
   }
   //MODE REPLAY
-  if (replay) {
+  else {
     for (Pixel p : pxs) {
       if (p.isAt(lx1, ly1)) {
         p.setActive();
@@ -415,7 +434,7 @@ void mouseMoved() {
 
 void mouseReleased() {
   Pixel p;
-  getAbsolute(mouseX, mouseY);
+  //getAbsolute(mouseX, mouseY);
   if (mode==DrawMode.PIXEL) {
     drawPixel(false, false);
   } else if (mode==DrawMode.LINE||mode==DrawMode.DISC||mode==DrawMode.CIRCLE||mode==DrawMode.FRAME||mode==DrawMode.BOX||mode==DrawMode.PARSE) {
@@ -635,6 +654,7 @@ public void updateImagePreview(int tx, int ty, boolean clear) {
 /*element graphique pour historisation*/
 class GraphicElement {
   DrawMode type;
+  GraphicElement prev=null;//for pixels linked together in a bitmap
   int gwidth=0, gheight=0;
   int radius=0;//for circles 
   int x1=0, y1=0, x2=0, y2=0;
@@ -647,9 +667,22 @@ class GraphicElement {
     // this.y=y;
     this.x1=x;
     this.y1=y;
-    u8code="u8g_DrawPixel(&u8g"+ ","+x1+ ","+y1+");";
+    u8code="u8g_DrawPixel(&u8g"+ ","+x1+ ","+y1+");\n";
+    codeArea.append(u8code);
     outputCode.add(u8code);
   }
+  //for single pixels part of a bitmap
+  public GraphicElement(DrawMode mode, int x, int y, GraphicElement prev) {
+    this.prev=prev;
+    this.type=mode;    
+    this.x1=x;
+    this.y1=y;
+    u8code="u8g_DrawPixel(&u8g"+ ","+x1+ ","+y1+");";
+    //codeArea.append(u8code);
+    //outputCode.add(u8code);
+    //println(this, " linked to ", prev);
+  }
+
   //for boxes,frames,lines
   //(x1,y1) (x2,y2) begin:end points
   public GraphicElement(DrawMode mode, int x1, int y1, int x2, int y2) {
@@ -677,10 +710,11 @@ class GraphicElement {
       this.y1=y1;
       this.x2=x2;
       this.y2=y2;
-      u8code="u8g_DrawLine(&u8g"+ ","+x1+ ","+y1+ ","+x2+ ","+y2+");";
+      u8code="u8g_DrawLine(&u8g"+ ","+x1+ ","+y1+ ","+x2+ ","+y2+");\n";
       //println(u8code);
     }
     outputCode.add(u8code);
+    codeArea.append(u8code);
   }
   //for circles
   public GraphicElement(DrawMode mode, int x, int y, int radius) {
@@ -691,6 +725,7 @@ class GraphicElement {
     u8code="u8g_DrawCircle(&u8g"+ ","+x1+ ","+y1+ ","+radius+ ",U8G_DRAW_ALL);";
     //println(u8code);
     outputCode.add(u8code);
+    codeArea.append(u8code);
   }
   public void setupPixel() {
     lx1=this.x1;
@@ -712,6 +747,10 @@ class GraphicElement {
   }
   public DrawMode getType() {
     return this.type;
+  }
+  //returns last linked GraphicElement if any
+  public GraphicElement getPrevious() {
+    return prev;
   }
 }
 
@@ -756,7 +795,7 @@ class Coordinate {
   }
 }
 
-void fileSelected(File selection) {
+void backgroundImageSelected(File selection) {
   if (selection == null) {
     println("Window was closed or the user hit cancel.");
   } else {
@@ -771,7 +810,7 @@ void bitmapSelected(File selection) {
   } else {
     println("//Bitmap file " + selection.getAbsolutePath());
     bitmapFile=loadImage(selection.getAbsolutePath());
-
+    //si l'image ouverte n'est pas aux dimensions de la grille
     if (bitmapFile.width != gridX || bitmapFile.height != gridY) {
       JOptionPane.showMessageDialog(frame, "Picture file should be "+gridX+" by "+gridY+"px");
     } else {    
@@ -788,7 +827,7 @@ public void clearBackgroundImage() {
 
 public void loadBackgroundImage() {
   if (backgroundImage==null) {
-    selectInput("Select existing bitmap", "fileSelected");
+    selectInput("Select existing bitmap", "backgroundImageSelected");
   } else if (backgroundImage!=null) {
     backgroundImage=null;
     //clearAll();
@@ -801,8 +840,8 @@ public void loadBitmap() {
     selectInput("Select existing bitmap", "bitmapSelected");
   } else if (bitmapFile!=null) {
     bitmapFile=null;
-    clearAll();
-    histo.clear();
+    //clearAll();
+    //histo.clear();
     codeArea.setText("");
     codeFrame.setVisible(false);
   }
@@ -852,7 +891,7 @@ public void readBitmap() {
       if ( c !=0 ) {
         lx1=j;
         ly1=i;
-        drawPixel(true, true);
+        drawPixel(false, true);
         btmp.add(true);
       } else {
         btmp.add(false);
@@ -961,32 +1000,34 @@ public void rleEncoding(ArrayList<Boolean> p, Corners cdn) {
     }
   }
   //builds C array code 
-  println("#define IMG_LENGTH "+(cdn.cwidth+1));
+  //println("#define IMG_LENGTH "+(cdn.cwidth+1));
   codeArea.append("#define IMG_LENGTH "+(cdn.cwidth+1)+"\n");
-  println("#define RLE_BYTES ", pxc.size());
+  //println("#define RLE_BYTES ", pxc.size());
   codeArea.append("#define RLE_BYTES "+ pxc.size()+"\n");
-  println ("uint8_t img1[RLE_BYTES] = {");
+  //println ("uint8_t img1[RLE_BYTES] = {");
   codeArea.append("uint8_t img1[RLE_BYTES] = {");
   for (int i=0; i<pxc.size()-1; i++) {
-    print("0x"+hex(pxc.get(i), 2), ", ");    
+    //print("0x"+hex(pxc.get(i), 2), ", ");    
     codeArea.append("0x"+hex(pxc.get(i), 2)+ ", ");
     //  print("d"+pxc.get(i));
   } 
   codeArea.append("0x"+hex(pxc.get(pxc.size()-1), 2));//the last element doesn't need a ','
-  print("0x"+hex(pxc.get(pxc.size()-1), 2));//the last element doesn't need a ','
+  //print("0x"+hex(pxc.get(pxc.size()-1), 2));//the last element doesn't need a ','
   codeArea.append("};"+"\n");
-  print("};");
+  //print("};");
 
 
   //draw method
+  /*
   println("");
-  println("void draw(void){");
-  println ("\tuint8_t fx=", fx, ";");
-  println ("\tuint8_t fy=", fy, ";");
-  println("\tuint8_t x=fx,y=fy;\r\n\tuint8_t c=0x01;//color code for the first color in the RLE (0x00: black, 0x01:white)\r\n\tuint16_t i;\r\n\tuint8_t j;\r\n\tfor( i = 0; i < RLE_BYTES; i++ ) {//read image byte array\r\n\t\tfor (j=0;j<img1[i];j++){//write current byte to screen\r\n\r\n\t\t\tif (c==0x01){\r\n\t\t\t\tu8g_DrawPixel(&u8g,x,y);\r\n\t\t\t}\r\n\t\t\tif(x<fx+IMG_LENGTH-1){\r\n\t\t\t\tx++;\r\n\t\t\t}else{\r\n\t\t\t\tx=fx;\r\n\t\t\t\ty=y+1;\r\n\t\t\t}\r\n\t\t}\r\n\t\tc=c^0x01;//toggle color\r\n\t}");
-  println ("\r\n}");
-
-  println("");
+   println("void draw(void){");
+   println ("\tuint8_t fx=", fx, ";");
+   println ("\tuint8_t fy=", fy, ";");
+   println("\tuint8_t x=fx,y=fy;\r\n\tuint8_t c=0x01;//color code for the first color in the RLE (0x00: black, 0x01:white)\r\n\tuint16_t i;\r\n\tuint8_t j;\r\n\tfor( i = 0; i < RLE_BYTES; i++ ) {//read image byte array\r\n\t\tfor (j=0;j<img1[i];j++){//write current byte to screen\r\n\r\n\t\t\tif (c==0x01){\r\n\t\t\t\tu8g_DrawPixel(&u8g,x,y);\r\n\t\t\t}\r\n\t\t\tif(x<fx+IMG_LENGTH-1){\r\n\t\t\t\tx++;\r\n\t\t\t}else{\r\n\t\t\t\tx=fx;\r\n\t\t\t\ty=y+1;\r\n\t\t\t}\r\n\t\t}\r\n\t\tc=c^0x01;//toggle color\r\n\t}");
+   println ("\r\n}");
+   
+   println("");
+   */
   codeArea.append("void draw(void){"+"\n");
   codeArea.append ("\tuint8_t fx="+fx+ ";"+"\n");
   codeArea.append ("\tuint8_t fy="+ fy+";"+"\n");
