@@ -27,7 +27,7 @@ final int bottomMargin=160;
 ArrayList <Pixel> pxs;
 ArrayList <GraphicElement> histo;
 GraphicElement lastGraphicElement=null;//last drawn (used to historize bitmap drawings) 
-ArrayList <String> outputCode;
+//ArrayList <String> outputCode;
 ArrayList <Integer> rlePicture;
 color black=color(0, 0, 0);
 color blue=color(55, 133, 145);
@@ -72,18 +72,19 @@ void setup() {
   JButton copyButton=new JButton("copy to clipboard");
   copyButton.addActionListener(new ButtonListener());
   codeFrame.add(copyButton, BorderLayout.SOUTH);
-
+  codeFrame.setVisible(true); 
+  
   curMouse=new Coordinate(0, 0);
   lastUserMode=mode=DrawMode.PIXEL;
   vpxs=new Pixel[gridX][gridY];
-  textFont(createFont("Calibri-30.vlw", 20));
+  textFont(createFont("Cabin-Regular.ttf", 20));
   thumbnail=createImage(gridX, gridY, RGB);//miniature preview
   stroke(130);  
   frameRate(15);
-  itoolbt=loadImage("toolbartip.png");
+  itoolbt=loadImage("toolbar.png");
   pxs=new ArrayList<Pixel>();
   histo=new ArrayList<GraphicElement>();
-  outputCode= new ArrayList<String>();
+  //outputCode= new ArrayList<String>();
   int px=0;
   int py=0;
   Pixel p;
@@ -138,7 +139,7 @@ void draw() {
   tint(255, 255);
   text(mode+" MODE", 600, 700);
   text(curMouse.getX()+":"+curMouse.getY(), 600, 720);
-  image(cicon, 50, 680);
+  image(cicon, 5, 668);
   rect(width-gridX-2-rightMargin, 669, gridX+1, gridY+1);
   //display preview thumbnail
   image(thumbnail, width-gridX-1-rightMargin, 670);
@@ -186,17 +187,17 @@ void undoLast() {
     GraphicElement ge=histo.get(histo.size()-1);//recuperer dernier element
     if (ge.getPrevious()!=null) {//if last element is part of a bitmap
       while (ge.getPrevious()!=null) {//verifier s'il possede un prev
-      //println("del ",ge," linked to ",ge.getPrevious());
+        println("del ", ge, " linked to ", ge.getPrevious());
         //retirer l'element de l'historique
         ge=ge.getPrevious();
         histo.remove(histo.size()-1);
       }
       histo.remove(histo.size()-1);//on retire le dernier element (dont ge.getprevious()==null
-      //println("del ",ge," linked to ",ge.getPrevious());
+      println("del ", ge, " linked to ", ge.getPrevious());
       lastGraphicElement=null;
     } else {
       histo.remove(histo.size()-1);//on retire le dernier element de l'historique
-      outputCode.remove(outputCode.size()-1);
+      // outputCode.remove(outputCode.size()-1);
     }
     clearAll();
     replay();
@@ -231,9 +232,11 @@ void replay() {
 
 void printCode() {
   println("/* u8glib instructions */");
+  /*
   for (String e : outputCode) {
-    println(e);
-  }
+   println(e);
+   }
+   */
 }
 
 void drawBox(boolean replay) {
@@ -669,7 +672,7 @@ class GraphicElement {
     this.y1=y;
     u8code="u8g_DrawPixel(&u8g"+ ","+x1+ ","+y1+");\n";
     codeArea.append(u8code);
-    outputCode.add(u8code);
+    //outputCode.add(u8code);
   }
   //for single pixels part of a bitmap
   public GraphicElement(DrawMode mode, int x, int y, GraphicElement prev) {
@@ -677,10 +680,10 @@ class GraphicElement {
     this.type=mode;    
     this.x1=x;
     this.y1=y;
-    u8code="u8g_DrawPixel(&u8g"+ ","+x1+ ","+y1+");";
+    u8code="u8g_DrawPixel(&u8g"+ ","+x1+ ","+y1+");\n";
     //codeArea.append(u8code);
     //outputCode.add(u8code);
-    //println(this, " linked to ", prev);
+    println("add ", this, " linked to ", prev);
   }
 
   //for boxes,frames,lines
@@ -699,10 +702,10 @@ class GraphicElement {
       outWidth=gwidth+1;
       outHeight=gheight+1;
       if (mode==DrawMode.BOX) {
-        u8code="u8g_DrawBox(&u8g"+ ","+Math.min(x1, x2)+ ","+Math.min(y1, y2)+ ","+outWidth+","+outHeight+");";//+1 gros hack
+        u8code="u8g_DrawBox(&u8g"+ ","+Math.min(x1, x2)+ ","+Math.min(y1, y2)+ ","+outWidth+","+outHeight+");\n";//+1 gros hack
         //println(u8code);
       } else if (mode==DrawMode.FRAME) {
-        u8code="u8g_DrawFrame(&u8g"+ ","+Math.min(x1, x2)+ ","+Math.min(y1, y2)+ ","+outWidth+","+outHeight+");";//+1 gros  hack
+        u8code="u8g_DrawFrame(&u8g"+ ","+Math.min(x1, x2)+ ","+Math.min(y1, y2)+ ","+outWidth+","+outHeight+");\n";//+1 gros  hack
         //println(u8code);
       }
     } else if (mode==DrawMode.LINE) {
@@ -713,7 +716,7 @@ class GraphicElement {
       u8code="u8g_DrawLine(&u8g"+ ","+x1+ ","+y1+ ","+x2+ ","+y2+");\n";
       //println(u8code);
     }
-    outputCode.add(u8code);
+    //outputCode.add(u8code);
     codeArea.append(u8code);
   }
   //for circles
@@ -722,9 +725,9 @@ class GraphicElement {
     this.x1=x;
     this.y1=y;
     this.radius=radius;
-    u8code="u8g_DrawCircle(&u8g"+ ","+x1+ ","+y1+ ","+radius+ ",U8G_DRAW_ALL);";
+    u8code="u8g_DrawCircle(&u8g"+ ","+x1+ ","+y1+ ","+radius+ ",U8G_DRAW_ALL);\n";
     //println(u8code);
-    outputCode.add(u8code);
+    //outputCode.add(u8code);
     codeArea.append(u8code);
   }
   public void setupPixel() {
@@ -815,7 +818,7 @@ void bitmapSelected(File selection) {
       JOptionPane.showMessageDialog(frame, "Picture file should be "+gridX+" by "+gridY+"px");
     } else {    
       readBitmap();
-      codeFrame.setVisible(true);
+      //codeFrame.setVisible(true);
     }
   }
 }
@@ -843,7 +846,7 @@ public void loadBitmap() {
     //clearAll();
     //histo.clear();
     codeArea.setText("");
-    codeFrame.setVisible(false);
+    //codeFrame.setVisible(false);
   }
 }
 
@@ -898,7 +901,7 @@ public void readBitmap() {
       }
     }
   }
-
+  lastGraphicElement=null;
   rleEncoding(btmp, cdn);
 }
 
