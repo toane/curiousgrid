@@ -13,3 +13,5 @@ Features:
 Missing features:
 - freehand drawing
 - save/load
+
+![Screenshot](screen1.png)
